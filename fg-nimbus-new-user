@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import shutil
+import subprocess
+import tempfile
+import tarfile
+import string
+
+#####################################################################
+# CONFIG
+#####################################################################
+
+# path to nimbus-new-user program
+_NIMBUS_NEW_USER_EXE='/Users/david/foop/bin/nimbus-new-user'
+
+# path to cloud.properties template file
+# every file in this directory will be interpolated as a template and included
+# in user credentials bundle
+_CLOUD_TMPL_DIR='/Users/david/nimbus_cloud_templates'
+
+_DELIMITER = '|'
+
+#####################################################################
+
+_USAGE = "fg-nimbus-new-user [nimbus-new-user args] username dest.tar.gz\n"
+
+_FIELDS = ['cert','key','dn','canonical_id','access_id','access_secret']
+_FIELDS_CSV = ','.join(_FIELDS)
+
+def _nimbus_new_user(args, delimiter=_DELIMITER):
+    """calls nimbus-new-user and parses the result into a dict of user info
+    """
+
+    calling_args = [_NIMBUS_NEW_USER_EXE]
+    calling_args.extend(args)
+
+    proc = subprocess.Popen(calling_args, stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE)
+    (output,error) = proc.communicate()
+    ret = proc.wait()
+
+    if ret:
+        print "Problem calling nimbus-new-user!\n"
+        print output
+        print ""
+        print error
+        return None
+
+    output = output.strip()
+    fields = output.split(delimiter)
+    if len(fields) != len(_FIELDS):
+        print "Could not understand output of nimbus-new-user!\n"
+        print output
+        return None
+
+    user = {}
+    for k,v in zip(_FIELDS, fields):
+        #ughh, this output should be json or something
+        if v == 'None':
+            v = None
+        user[k] = v
+    return user
+
+def main(args=sys.argv[1:]):
+    # heh
+    if len(args) < 2 or '--help' in args:
+        print _USAGE
+        return 1
+
+    # last arg is the tarball, let's say
+    tarball_path = args.pop()
+    if os.path.exists(tarball_path):
+        print "Destination tarfile exists: "+ tarball_path
+        return 1
+
+    tempdir = None
+    tarball = None
+    allok = False
+    try:
+
+        tempdir = tempfile.mkdtemp(prefix='nimbus')
+        tarball = tarfile.open(tarball_path, 'w:gz')
+
+        extraargs = ['-d', tempdir, '--nocloud-properties', '--batch', '-r',
+                _FIELDS_CSV, '-D', _DELIMITER]
+        args.extend(extraargs)
+
+        user = _nimbus_new_user(args)
+        if not user:
+            return 1
+
+        if user['cert']:
+            cert_filename = os.path.basename(user['cert'])
+            tarball.add(user['cert'], cert_filename)
+            user['cert'] = cert_filename
+        else:
+            user['cert'] = ''
+
+        if user['key']:
+            key_filename = os.path.basename(user['key'])
+            tarball.add(user['key'], key_filename)
+            user['key'] = key_filename
+        else:
+            user['key'] = ''
+
+
+        for cloud in os.listdir(_CLOUD_TMPL_DIR):
+            cloudpath = os.path.join(_CLOUD_TMPL_DIR, cloud)
+            if os.path.islink(cloudpath):
+                tarball.add(cloudpath, cloud)
+                continue
+
+            f = open(cloudpath)
+            tmpl = string.Template(f.read())
+            f.close()
+
+            outpath = os.path.join(tempdir, cloud)
+
+            f = open(outpath, 'w')
+            os.chmod(outpath, 0600)
+            try:
+                f.write(tmpl.substitute(user))
+            finally:
+                f.close()
+            tarball.add(outpath, cloud)
+
+            allok = True
+
+    finally:
+        if tempdir:
+            shutil.rmtree(tempdir)
+        if not allok:
+            os.remove(tarball_path)
+
+    return allok and 0 or 1
+
+if __name__ == '__main__':
+    rc = main()
+    sys.exit(rc)
