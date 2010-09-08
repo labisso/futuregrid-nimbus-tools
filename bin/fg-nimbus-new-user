@@ -59,6 +59,7 @@ class Config(object):
         self.delimiter = self.get('delimiter')
         self.nimbus_new_user_path = self._resolve_path(self.get('nimbus-new-user'))
         self.cloud_dir = self._resolve_path(self.get('cloud_dir'))
+        self.temp_dir = self._resolve_path(self.get('temp_dir'))
 
     def get(self, key):
         return self.config.get('fg-nimbus', key)
@@ -88,7 +89,7 @@ def main(args, configpath):
     allok = False
     try:
 
-        tempdir = tempfile.mkdtemp(prefix='nimbus')
+        tempdir = tempfile.mkdtemp(prefix='nimbus', dir=config.temp_dir)
         tarball = tarfile.open(tarball_path, 'w:gz')
 
         extraargs = ['-d', tempdir, '--nocloud-properties', '--batch', '-r',
