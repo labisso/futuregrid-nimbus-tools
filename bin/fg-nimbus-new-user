@@ -7,33 +7,19 @@ import subprocess
 import tempfile
 import tarfile
 import string
+import ConfigParser
 
-#####################################################################
-# CONFIG
-#####################################################################
-
-# path to nimbus-new-user program
-_NIMBUS_NEW_USER_EXE='/Users/david/foop/bin/nimbus-new-user'
-
-# path to cloud.properties template file
-# every file in this directory will be interpolated as a template and included
-# in user credentials bundle
-_CLOUD_TMPL_DIR='/Users/david/nimbus_cloud_templates'
-
-_DELIMITER = '|'
-
-#####################################################################
 
 _USAGE = "fg-nimbus-new-user [nimbus-new-user args] username dest.tar.gz\n"
 
 _FIELDS = ['cert','key','dn','canonical_id','access_id','access_secret']
 _FIELDS_CSV = ','.join(_FIELDS)
 
-def _nimbus_new_user(args, delimiter=_DELIMITER):
+def _nimbus_new_user(script, args, delimiter):
     """calls nimbus-new-user and parses the result into a dict of user info
     """
 
-    calling_args = [_NIMBUS_NEW_USER_EXE]
+    calling_args = [script]
     calling_args.extend(args)
 
     proc = subprocess.Popen(calling_args, stdout=subprocess.PIPE, 
@@ -63,11 +49,33 @@ def _nimbus_new_user(args, delimiter=_DELIMITER):
         user[k] = v
     return user
 
-def main(args=sys.argv[1:]):
+class Config(object):
+    def __init__(self, configpath):
+        self.configpath = configpath
+        config = ConfigParser.SafeConfigParser()
+        self.config = config
+        config.read(configpath)
+
+        self.delimiter = self.get('delimiter')
+        self.nimbus_new_user_path = self._resolve_path(self.get('nimbus-new-user'))
+        self.cloud_dir = self._resolve_path(self.get('cloud_dir'))
+
+    def get(self, key):
+        return self.config.get('fg-nimbus', key)
+
+    def _resolve_path(self, path):
+        if os.path.isabs(path):
+            return path
+        confdir = os.path.dirname(self.configpath)
+        return os.path.abspath(os.path.join(confdir, path))
+
+def main(args, configpath):
     # heh
     if len(args) < 2 or '--help' in args:
         print _USAGE
         return 1
+
+    config = Config(configpath)
 
     # last arg is the tarball, let's say
     tarball_path = args.pop()
@@ -84,10 +92,10 @@ def main(args=sys.argv[1:]):
         tarball = tarfile.open(tarball_path, 'w:gz')
 
         extraargs = ['-d', tempdir, '--nocloud-properties', '--batch', '-r',
-                _FIELDS_CSV, '-D', _DELIMITER]
+                _FIELDS_CSV, '-D', config.delimiter]
         args.extend(extraargs)
 
-        user = _nimbus_new_user(args)
+        user = _nimbus_new_user(config.nimbus_new_user_path, args, config.delimiter)
         if not user:
             return 1
 
@@ -106,8 +114,8 @@ def main(args=sys.argv[1:]):
             user['key'] = ''
 
 
-        for cloud in os.listdir(_CLOUD_TMPL_DIR):
-            cloudpath = os.path.join(_CLOUD_TMPL_DIR, cloud)
+        for cloud in os.listdir(config.cloud_dir):
+            cloudpath = os.path.join(config.cloud_dir, cloud)
             if os.path.islink(cloudpath):
                 tarball.add(cloudpath, cloud)
                 continue
@@ -137,5 +145,7 @@ def main(args=sys.argv[1:]):
     return allok and 0 or 1
 
 if __name__ == '__main__':
-    rc = main()
+    basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    configpath = os.path.join(basedir, "fg-nimbus.conf")
+    rc = main(args=sys.argv[1:], configpath=configpath)
     sys.exit(rc)
