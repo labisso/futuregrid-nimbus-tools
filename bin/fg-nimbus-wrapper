@@ -1,0 +1,32 @@
+#!/bin/bash
+
+BASEDIR_REL="`dirname $0`/.."
+BASEDIR=`cd $BASEDIR_REL; pwd`
+
+TEMPDIR="$BASEDIR/temp"
+BINDIR="$BASEDIR/bin"
+
+if [ "$1X" = "X" ]; then
+    echo ""
+    echo "Usage: $0 username"
+    echo ""
+    exit 1
+fi
+
+USERNAME="$1"
+
+CREDPATH="${TEMPDIR}/${USERNAME}_creds_`date +%s`.tar.gz"
+
+$BINDIR/fg-nimbus-new-user $USERNAME $CREDPATH
+if [ $? -ne 0 ]; then
+    echo "User creation failed!"
+    exit $?
+fi
+
+sudo $BINDIR/fg-nimbus-place-credentials $USERNAME $CREDPATH nimbus_creds.tar.gz
+if [ $? -ne 0 ]; then
+    echo "User credential placement failed!"
+    exit $?
+fi
+
+

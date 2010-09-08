@@ -143,7 +143,9 @@ def main(args, configpath):
         if not allok:
             os.remove(tarball_path)
 
-    return allok and 0 or 1
+    if allok:
+        return 0
+    return 1
 
 if __name__ == '__main__':
     basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
