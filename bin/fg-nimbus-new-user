@@ -57,12 +57,16 @@ class Config(object):
         config.read(configpath)
 
         self.delimiter = self.get('delimiter')
-        self.nimbus_new_user_path = self._resolve_path(self.get('nimbus-new-user'))
+        bin = self.get('nimbus-new-user')
+        self.nimbus_new_user_path = bin and self._resolve_path(bin) or 'nimbus-new-user'
         self.cloud_dir = self._resolve_path(self.get('cloud_dir'))
         self.temp_dir = self._resolve_path(self.get('temp_dir'))
 
     def get(self, key):
-        return self.config.get('fg-nimbus', key)
+        try:
+            return self.config.get('fg-nimbus', key)
+        except ConfigParser.NoOptionError:
+            return None
 
     def _resolve_path(self, path):
         if os.path.isabs(path):
