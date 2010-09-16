@@ -94,7 +94,10 @@ def main(args, configpath):
     try:
 
         tempdir = tempfile.mkdtemp(prefix='nimbus', dir=config.temp_dir)
-        tarball = tarfile.open(tarball_path, 'w:gz')
+
+        f = open(tarball_path, 'w')
+        os.chmod(tarball_path, 0600)
+        tarball = tarfile.open(tarball_path, 'w:gz', fileobj=f)
 
         extraargs = ['-d', tempdir, '--nocloud-properties', '--batch', '-r',
                 _FIELDS_CSV, '-D', config.delimiter]
