@@ -5,6 +5,7 @@ BASEDIR=`cd $BASEDIR_REL; pwd`
 
 TEMPDIR="$BASEDIR/temp"
 BINDIR="$BASEDIR/bin"
+CREDSCRIPT="/home/nimbus/sudo/fg-nimbus-place-credentials"
 
 if [ "$1X" = "X" ]; then
     echo ""
@@ -23,7 +24,7 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-sudo $BINDIR/fg-nimbus-place-credentials $USERNAME $CREDPATH nimbus_creds.tar.gz
+sudo $CREDSCRIPT $USERNAME $CREDPATH nimbus_creds.tar.gz
 if [ $? -ne 0 ]; then
     echo "User credential placement failed!"
     exit $?
