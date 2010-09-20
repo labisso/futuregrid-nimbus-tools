@@ -9,7 +9,7 @@ from fabric.api import *
 
 _DELIMITER = '|'
 
-def push_users(statedir=None):
+def push_users(statedir=None, force=False, dryrun=False):
     if not 'nimbus_userlist' in env:
         env['nimbus_userlist'] = _get_userlist()
     userlist_text = env['nimbus_userlist']
@@ -35,7 +35,7 @@ def push_users(statedir=None):
         except:
             lastupdate_md5 = None
 
-        if lastupdate_md5 == userlist_md5:
+        if not force and lastupdate_md5 == userlist_md5:
             print "Not updating because MD5 is the same"
             return
 
@@ -52,7 +52,10 @@ def push_users(statedir=None):
         put(path, remote_temp)
         assert userlist_md5 == run('md5sum ' + remote_temp).split()[0]
 
-        run('~/2.5/bin/nimbus-import-users -d --batch -D "%s" %s ' % (_DELIMITER, remote_temp))
+        dryrunarg = "-d" if dryrun else ""
+
+        run('~/2.5/bin/nimbus-import-users %s --batch -D "%s" %s ' % (dryrunarg, 
+            _DELIMITER, remote_temp))
 
         if statedir:
             try:
