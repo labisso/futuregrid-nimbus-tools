@@ -54,7 +54,7 @@ def push_users(statedir=None, force=False, dryrun=False):
 
         dryrunarg = "-d" if dryrun else ""
 
-        run('~/2.5/bin/nimbus-import-users -c %s --batch -D "%s" %s ' % (dryrunarg, 
+        run('~/2.5/bin/nimbus-import-users -uc %s --batch -D "%s" %s ' % (dryrunarg, 
             _DELIMITER, remote_temp))
 
         if statedir:
