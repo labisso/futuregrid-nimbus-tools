@@ -1,0 +1,9 @@
+#!/bin/bash
+
+BASEDIR_REL="`dirname $0`/.."
+BASEDIR=`cd $BASEDIR_REL; pwd`
+
+JAR="$BASEDIR/lib/java/netlogger-nimbus.jar"
+
+java -jar $JAR "$@"
+
