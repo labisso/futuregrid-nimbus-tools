@@ -8,6 +8,9 @@ BINDIR="$BASEDIR/bin"
 MAKE_CREDS_SCRIPT="$BINDIR/fg-nimbus-make-creds"
 PLACE_CREDS_SCRIPT="sudo /home/nimbus/sudo/fg-nimbus-place-creds"
 
+NIMBUS_USER="nimbus"
+NIMBUS_GROUP="nimbus"
+
 if [ "$1X" = "X" ]; then
     echo ""
     echo "Usage: $0 username"
@@ -24,6 +27,9 @@ if [ $? -ne 0 ]; then
     echo "User creation failed!"
     exit $?
 fi
+
+# in case we are running as root
+chown $NIMBUS_USER:$NIMBUS_GROUP $CREDPATH 
 
 $PLACE_CREDS_SCRIPT $USERNAME $CREDPATH nimbus_creds.tar.gz
 if [ $? -ne 0 ]; then
