@@ -10,7 +10,7 @@ import string
 import ConfigParser
 
 
-_USAGE = "fg-nimbus-new-user [nimbus-new-user args] username dest.tar.gz\n"
+_USAGE = "fg-nimbus-make-creds [nimbus-new-user args] username dest.tar.gz\n"
 
 _FIELDS = ['cert','key','dn','canonical_id','access_id','access_secret']
 _FIELDS_CSV = ','.join(_FIELDS)

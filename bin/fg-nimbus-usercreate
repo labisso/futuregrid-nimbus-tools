@@ -5,7 +5,8 @@ BASEDIR=`cd $BASEDIR_REL; pwd`
 
 TEMPDIR="$BASEDIR/temp"
 BINDIR="$BASEDIR/bin"
-CREDSCRIPT="/home/nimbus/sudo/fg-nimbus-place-credentials"
+MAKE_CREDS_SCRIPT="$BINDIR/fg-nimbus-make-creds"
+PLACE_CREDS_SCRIPT="sudo /home/nimbus/sudo/fg-nimbus-place-creds"
 
 if [ "$1X" = "X" ]; then
     echo ""
@@ -18,13 +19,13 @@ USERNAME="$1"
 
 CREDPATH="${TEMPDIR}/${USERNAME}_creds_`date +%s`.tar.gz"
 
-$BINDIR/fg-nimbus-new-user $USERNAME $CREDPATH
+$MAKE_CREDS_SCRIPT $USERNAME $CREDPATH
 if [ $? -ne 0 ]; then
     echo "User creation failed!"
     exit $?
 fi
 
-sudo $CREDSCRIPT $USERNAME $CREDPATH nimbus_creds.tar.gz
+$PLACE_CREDS_SCRIPT $USERNAME $CREDPATH nimbus_creds.tar.gz
 if [ $? -ne 0 ]; then
     echo "User credential placement failed!"
     exit $?
